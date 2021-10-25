@@ -1,0 +1,32 @@
+<!DOCTYPE html PUBLIC>
+<html>
+<head>
+<style>
+#testTable {
+  border-collapse: collapse;
+  width: 50%;
+}
+
+#testTable td, #customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#testTable th {
+  padding: 8px;
+  text-align: left;
+  background-color: #4CAF50;
+  border: 1px solid #ddd;
+  color: white;
+}
+</style>
+<h1>GGZWNB <br />
+Notificatie: parameter_notif_naam</h1>
+</head>
+
+<body>
+        <h2>Onderwerp: parameter_notif_subject</h2>
+        <p>Reden: parameter_notif_reason</p>
+        <p>Actie: parameter_notif_action</p>
+
+        <table id="testTable">

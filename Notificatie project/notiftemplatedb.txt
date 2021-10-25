@@ -1,0 +1,104 @@
+import smtplib
+import cx_Oracle
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from email.mime.application import MIMEApplication
+from sqlite3 import connect
+import datetime as dt
+
+notification_name = 'parameter_notification_name'
+thisday = dt.datetime.today().strftime("%Y-%m-%d %H:%M")
+
+def logging_stats(notif_name, date_time, status, result ,omschrijving):
+    with connect('C:/Users/Joran/AfstudeerprojectNotification/ProjectNotification/notification.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO logging VALUES(NULL, ?, ?, ?, ?, ?)", (notif_name, date_time, status, result, omschrijving))
+        return True
+
+def db_query():
+    try:
+    	dsn_tns = cx_Oracle.makedsn('', , service_name='')
+    	conn = cx_Oracle.connect(user=r'', password='', dsn=dsn_tns) 
+        c = conn.cursor()
+        c.execute('''parameter_query''') 
+        col_names = [row[0] for row in c.description]
+        row_results = [row for row in c]
+        succes = 1
+        conn.close()
+        return col_names, row_results, succes
+    except:
+        col_names = []
+        row_results = []        
+        succes = 2
+        status = 'FOUT'
+        result = ''
+        omschrijving = 'Er kon geen verbinding met de database gemaakt worden'
+        logging_stats(notification_name, thisday, status, result, omschrijving)
+        return col_names, row_results, succes
+
+def send_test_mail(body, results):
+    sender_email = ''
+    recipients = 'parameter_email'
+
+    msg = MIMEMultipart()
+    msg['Subject'] = 'parameter_subject'
+    msg['From'] = sender_email
+    msg['To'] = recipients
+
+    msgText = MIMEText(body, 'html')
+    msg.attach(msgText)
+
+    sturing = parameter_bijlage_sturing    
+    if sturing == True:
+        pdf = MIMEApplication(open("parameter_bijlage", 'rb').read())
+        pdf.add_header('Content-Disposition', 'attachment', filename= "parameter_xbijlage_naam")
+        msg.attach(pdf)
+
+    try:
+        with smtplib.SMTP('', ) as smtpObj:
+            smtpObj.ehlo()
+            smtpObj.starttls()
+            smtpObj.sendmail(sender_email, recipients.split(','), msg.as_string())
+            status = 'OK'
+            result = results
+            omschrijving = 'Notificatie is goed verstuurd'
+            logging_stats(notification_name, thisday, status, result ,omschrijving)
+    except Exception as e:
+        status = 'FOUT'
+        result = results
+        omschrijving = ('Notificatie is niet goed verstuurd')
+        logging_stats(notification_name, thisday, status, result, omschrijving)
+
+if __name__ == "__main__":
+    columns, rows, succes = db_query()
+    if succes == 1:
+        if len(rows) < 1:
+            status = 'OK, geen bericht'
+            result = 'Geen resultaten'
+            omschrijving = 'Notificatie is niet verzonden omdat er geen resultaten uit de query kwamen'
+            logging_stats(notification_name, thisday, status, result ,omschrijving)
+        else: 
+            column_name = ''
+            row_names = ''
+            for i in columns:
+                column_name = column_name + ('<td>'+str(i)+'</td>')
+            column_names = '<tr><b>' + column_name + ('</b></tr>'+'\n')
+            for l in rows:
+                row_names = row_names + ('<tr>')
+                for y in l:
+                    if len(y) < 1:
+                        y = ''
+                    row_names = row_names + ('<td>'+str(y)+'</td>')
+                row_names = row_names + ('</tr>'+'\n')
+            send_test_mail("""\
+        parameter_txt_email
+        """+ column_names + row_names +"""\
+        </table>
+        <br />
+        <br />
+        <p>Met vriendelijke groet</p>
+        <p>Jorans notificatie applicatie</p>
+
+        </body>
+        </html>""", str(rows))

@@ -1,0 +1,33 @@
+import cx_Oracle
+from sqlite3 import connect
+import datetime as dt
+
+notification_name = 'parameter_mutation_name'
+thisday = dt.datetime.today().strftime("%Y-%m-%d %H:%M")
+
+def logging_stats(notif_name, date_time, status, result ,omschrijving):
+    with connect('C:/Users/Joran/AfstudeerprojectNotification/ProjectNotification/notification.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO logging VALUES(NULL, ?, ?, ?, ?, ?)", (notif_name, date_time, status, result, omschrijving))
+        return True
+
+def db_query():
+    dsn_tns = cx_Oracle.makedsn('', , service_name='')
+    conn = cx_Oracle.connect(user=r'', password='', dsn=dsn_tns) 
+    c = conn.cursor()
+    try:
+        c.execute('''parameter_query''') 
+        status = 'OK'
+        result = 'Mutatie uitgevoerd'
+        omschrijving = 'Query is uitgevoerd'
+        logging_stats(notification_name, thisday, status, result, omschrijving)
+    except:
+        status = 'FOUT'
+        result = 'Mutatie niet uitgevoerd'
+        omschrijving = 'Query is niet uitgevoerd'
+        logging_stats(notification_name, thisday, status, result, omschrijving)      
+    conn.close()
+    
+if __name__ == "__main__":
+    db_query()
+   
